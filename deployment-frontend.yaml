@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: exam
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: smaexe/gestionnaire-notes-frontend:1.0.3
+        ports:
+        - containerPort: 80
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: BACKEND_URL
+        resources:
+          requests:
+            cpu: "500m"                     # Adjust as needed
+            memory: "256Mi"                 # Adjust as needed
+          limits:
+            cpu: "1"                         # Adjust as needed
+            memory: "512Mi"                  # Adjust as needed
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: exam
+spec:
+  ports:
+    - port: 80
+      targetPort: 80                   # Ensure the target port matches the container port
+  selector:
+    app: frontend
+  type: NodePort

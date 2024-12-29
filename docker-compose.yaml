@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - chabaka
+    depends_on:
+      - backend
+      - frontend
+
+  postgres_container:
+    image: postgres:latest
+    environment:
+      DB_HOST: postgres_container
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: pa12
+      DB_NAME: GestionnaireNotes
+    networks:
+      - chabaka
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+        reservations:
+          memory: 256M
+          cpus: "0.2"
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+
+  backend:
+    image: smaexe/gestionnaire-notes-backend:1.0.7
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://postgres_container:5432/GestionnaireNotes
+    networks:
+      - chabaka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+
+  frontend:
+    image: smaexe/gestionnaire-notes-frontend:1.0.2
+    environment:
+      BACKEND_URL: http://backend.local
+    networks:
+      - chabaka
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+        reservations:
+          memory: 256M
+          cpus: "0.2"
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+
+networks:
+  chabaka:
+    driver: overlay
+
+volumes:
+  db_data:
+    driver: local

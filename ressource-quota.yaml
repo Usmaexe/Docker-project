@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: resource-quota
+  namespace: exam
+spec:
+  hard:
+    requests.cpu: "4"        # Increase to accommodate the new pod
+    limits.cpu: "8"          # Increase to allow for additional CPU usage
+    requests.memory: "4Gi"    # Increase to cover requests for both frontend and backend
+    limits.memory: "8Gi"      # Increase to allow for more memory usage
